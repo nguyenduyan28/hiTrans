@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
 import google.generativeai as genai
 import json
-import re  # Thêm regex để lọc JSON
-import logging  # Thêm logging
+import re
+import logging
 from dotenv import load_dotenv
 import os
 from flask_caching import Cache
@@ -13,7 +13,6 @@ GEMINI_API = os.getenv('GEMINI_API')
 
 genai.configure(api_key=GEMINI_API)
 
-# Cấu hình logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,6 @@ def detect_language():
         response = model.generate_content(prompt)
         clean_response = response.text.strip('```json').strip('```').strip()
         logger.info(f"Detect response raw: {response.text}")
-        # Lọc chỉ lấy JSON đầu tiên
         json_match = re.search(r'\{.*?\}', clean_response, re.DOTALL)
         if json_match:
             clean_json = json_match.group(0)
@@ -86,7 +84,8 @@ def translate_text():
         "casual": "casual conversational tone"
     }.get(style, "casual conversational tone")
 
-    max_length = 2000
+    # Tăng giới hạn lên 10000 hoặc bỏ luôn (comment dòng max_length để bỏ)
+    max_length = 10000  # Có thể comment để xử lý full text không chia chunk
     if len(text) > max_length:
         chunks = [text[i:i+max_length] for i in range(0, len(text), max_length)]
         translated_chunks = []
@@ -105,14 +104,15 @@ def translate_text():
                 response = model.generate_content(prompt)
                 clean_response = response.text.strip('```json').strip('```').strip()
                 logger.info(f"Translate chunk response raw: {response.text}")
-                # Lọc chỉ lấy JSON đầu tiên
-                json_match = re.search(r'\{.*?\}', clean_response, re.DOTALL)
+                json_match = re.search(r'\{.*?"translated_text":\s*".*?"\}', clean_response, re.DOTALL)
                 if json_match:
                     clean_json = json_match.group(0)
                     translated_data = json.loads(clean_json)
                     translated_chunks.append(translated_data["translated_text"])
                 else:
-                    raise ValueError("No valid JSON found in response")
+                    # Nếu JSON lỗi, lấy text thô từ response
+                    logger.warning(f"JSON parse failed for chunk, using raw text: {clean_response}")
+                    translated_chunks.append(clean_response)
             return jsonify({"translated_text": " ".join(translated_chunks)})
         except ValueError as ve:
             logger.error(f"Invalid JSON in translate chunk: {str(ve)}, response: {response.text}")
@@ -135,14 +135,15 @@ def translate_text():
             response = model.generate_content(prompt)
             clean_response = response.text.strip('```json').strip('```').strip()
             logger.info(f"Translate response raw: {response.text}")
-            # Lọc chỉ lấy JSON đầu tiên
-            json_match = re.search(r'\{.*?\}', clean_response, re.DOTALL)
+            json_match = re.search(r'\{.*?"translated_text":\s*".*?"\}', clean_response, re.DOTALL)
             if json_match:
                 clean_json = json_match.group(0)
                 translated_data = json.loads(clean_json)
                 return jsonify(translated_data)
             else:
-                raise ValueError("No valid JSON found in response")
+                # Nếu JSON lỗi, trả text thô
+                logger.warning(f"JSON parse failed, using raw text: {clean_response}")
+                return jsonify({"translated_text": clean_response})
         except ValueError as ve:
             logger.error(f"Invalid JSON in translate: {str(ve)}, response: {response.text}")
             return jsonify({"error": f"Invalid JSON response: {str(ve)}"}), 500
