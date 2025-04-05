@@ -1,0 +1,31 @@
+{
+  "timeZone": "Asia/Ho_Chi_Minh",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/documents.currentonly",
+    "https://www.googleapis.com/auth/script.external_request",  "https://www.googleapis.com/auth/script.container.ui",
+    "https://www.googleapis.com/auth/documents",
+    "https://www.googleapis.com/auth/cloud-translation"
+  ],
+  "addOns": {
+    "common": {
+      "name": "HiTrans Add-on",
+      "logoUrl": "https://example.com/logo.png",
+      "layoutProperties": {
+        "primaryColor": "#4CAF50"
+      },
+      "homepageTrigger": {
+        "runFunction": "onOpen"
+      }
+    },
+    "docs": {
+      "homepageTrigger": {
+        "runFunction": "onOpen"
+      }
+    }
+  },
+  "urlFetchWhitelist": [
+    "https://hitrans.onrender.com/"
+  ]
+}
