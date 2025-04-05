@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from google import generativeai as genai  # Sửa import
+from google import genai  # Sửa import
 import json
 from dotenv import load_dotenv
 import os
@@ -12,7 +12,7 @@ GEMINI_API = os.getenv('GEMINI_API')
 # Cấu hình Flask-Caching
 cache = Cache(app, config={'CACHE_TYPE': 'simple', 'CACHE_DEFAULT_TIMEOUT': 300})  # Cache 5 phút
 
-client = genai.GenerativeAI(api_key=GEMINI_API)  # Sửa cách khởi tạo client
+client = genai.Client(api_key=GEMINI_API)  # Sửa cách khởi tạo client
 
 @app.route('/detect-language', methods=['POST'])
 @cache.cached(key_prefix=lambda: json.dumps(request.json, sort_keys=True))
