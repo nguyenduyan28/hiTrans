@@ -31,7 +31,7 @@ def detect_language():
     '''
 
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')  # Dùng Flash cho detect
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt)
         clean_response = response.text.strip('```json').strip('```').strip()
         detected_data = json.loads(clean_response)
@@ -46,7 +46,7 @@ def translate_text():
     text = data.get('text', '')
     source_lang = data.get('source_lang', 'unknown')
     target_lang = data.get('target_lang', 'vi')
-    model_name = data.get('model', 'gemini-2.0-flash')  # Mặc định Flash
+    model_name = data.get('model', 'gemini-1.5-flash')
     temperature = data.get('temperature', 0.5)
     style = data.get('style', 'casual')
     translate_full = data.get('translate_full', False)
@@ -54,17 +54,12 @@ def translate_text():
     if not text:
         return jsonify({"error": "No text provided"}), 400
 
-    # Danh sách model hợp lệ
-    for models in genai.list_models():
-        valid_models.append(models.name)
     valid_models = [
+        'gemini-1.5-flash',
         'gemini-1.5-pro',
         'gemini-2.0-flash',
-        'gemini-2.0-flash-lite',
-        'gemini-2.0-flash-thinking-exp',
-        'gemini-2.5-pro-exp-03-25'
+        'gemini-2.5-pro-preview-03-25'
     ]
-    print(valid_models)
     if model_name not in valid_models:
         return jsonify({"error": f"Invalid model: {model_name}. Valid models: {valid_models}"}), 400
 
@@ -74,13 +69,12 @@ def translate_text():
         "casual": "casual conversational tone"
     }.get(style, "casual conversational tone")
 
-    # Chia nhỏ text nếu dài
     max_length = 2000
     if len(text) > max_length:
         chunks = [text[i:i+max_length] for i in range(0, len(text), max_length)]
         translated_chunks = []
         try:
-            model = genai.GenerativeModel("models/" + model_name, generation_config={"temperature": float(temperature)})
+            model = genai.GenerativeModel(model_name, generation_config={"temperature": float(temperature)})
             for chunk in chunks:
                 prompt = f'''
                 Translate the following text from {source_lang} to {target_lang} with a {style_desc}:
