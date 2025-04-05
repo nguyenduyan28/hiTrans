@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from google import genai
+from google import generativeai as genai  # Sửa import
 import json
 from dotenv import load_dotenv
 import os
@@ -12,7 +12,7 @@ GEMINI_API = os.getenv('GEMINI_API')
 # Cấu hình Flask-Caching
 cache = Cache(app, config={'CACHE_TYPE': 'simple', 'CACHE_DEFAULT_TIMEOUT': 300})  # Cache 5 phút
 
-client = genai.Client(api_key=GEMINI_API)
+client = genai.GenerativeAI(api_key=GEMINI_API)  # Sửa cách khởi tạo client
 
 @app.route('/detect-language', methods=['POST'])
 @cache.cached(key_prefix=lambda: json.dumps(request.json, sort_keys=True))
@@ -32,7 +32,7 @@ def detect_language():
     '''
 
     try:
-        response = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+        response = client.generate_content(model="gemini-2.0-flash", contents=prompt)
         clean_response = response.text.strip('```json').strip('```').strip()
         detected_data = json.loads(clean_response)
         return jsonify(detected_data)
@@ -70,7 +70,11 @@ def translate_text():
     '''
 
     try:
-        response = client.models.generate_content(model=model, contents=prompt, temperature=temperature)
+        response = client.generate_content(
+            model=model,
+            contents=prompt,
+            generation_config={"temperature": float(temperature)}  # Sửa cách truyền temperature
+        )
         clean_response = response.text.strip('```json').strip('```').strip()
         translated_data = json.loads(clean_response)
         return jsonify(translated_data)
