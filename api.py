@@ -80,7 +80,7 @@ def translate_text():
         chunks = [text[i:i+max_length] for i in range(0, len(text), max_length)]
         translated_chunks = []
         try:
-            model = genai.GenerativeModel(model_name, generation_config={"temperature": float(temperature)})
+            model = genai.GenerativeModel("models/" + model_name, generation_config={"temperature": float(temperature)})
             for chunk in chunks:
                 prompt = f'''
                 Translate the following text from {source_lang} to {target_lang} with a {style_desc}:
