@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from google import genai  # Sửa import
+import google.generativeai as genai  # Import đúng cách
 import json
 from dotenv import load_dotenv
 import os
@@ -9,10 +9,11 @@ app = Flask(__name__)
 load_dotenv()
 GEMINI_API = os.getenv('GEMINI_API')
 
+# Cấu hình API key cho Gemini
+genai.configure(api_key=GEMINI_API)
+
 # Cấu hình Flask-Caching
 cache = Cache(app, config={'CACHE_TYPE': 'simple', 'CACHE_DEFAULT_TIMEOUT': 300})  # Cache 5 phút
-
-client = genai.Client(api_key=GEMINI_API)  # Sửa cách khởi tạo client
 
 @app.route('/detect-language', methods=['POST'])
 @cache.cached(key_prefix=lambda: json.dumps(request.json, sort_keys=True))
@@ -32,7 +33,8 @@ def detect_language():
     '''
 
     try:
-        response = client.generate_content(model="gemini-2.0-flash", contents=prompt)
+        model = genai.GenerativeModel('gemini-2.0-flash')  # Tạo model
+        response = model.generate_content(prompt)
         clean_response = response.text.strip('```json').strip('```').strip()
         detected_data = json.loads(clean_response)
         return jsonify(detected_data)
@@ -46,7 +48,7 @@ def translate_text():
     text = data.get('text', '')
     source_lang = data.get('source_lang', 'unknown')
     target_lang = data.get('target_lang', 'vi')
-    model = data.get('model', 'gemini-2.0-flash')
+    model_name = data.get('model', 'gemini-2.0-flash')
     temperature = data.get('temperature', 0.5)
     style = data.get('style', 'casual')
 
@@ -70,11 +72,8 @@ def translate_text():
     '''
 
     try:
-        response = client.generate_content(
-            model=model,
-            contents=prompt,
-            generation_config={"temperature": float(temperature)}  # Sửa cách truyền temperature
-        )
+        model = genai.GenerativeModel(model_name, generation_config={"temperature": float(temperature)})  # Tạo model với temperature
+        response = model.generate_content(prompt)
         clean_response = response.text.strip('```json').strip('```').strip()
         translated_data = json.loads(clean_response)
         return jsonify(translated_data)
