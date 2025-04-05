@@ -38,7 +38,7 @@ def detect_language():
     try:
         model = genai.GenerativeModel('gemini-2.0-flash')
         response = model.generate_content(prompt)
-        clean_response = re.sub(r'```json|```', '', response.text).strip()  # Loại bỏ markdown triệt để
+        clean_response = re.sub(r'```json|```', '', response.text).strip()
         logger.info(f"Detect response raw: {response.text}")
         json_match = re.search(r'\{.*?\}', clean_response, re.DOTALL)
         if json_match:
@@ -72,8 +72,7 @@ def translate_text():
     valid_models = [
         'gemini-1.5-flash',
         'gemini-1.5-pro',
-        'gemini-2.0-flash',
-        'gemini-2.5-pro-preview-03-25'
+        'gemini-2.0-flash'
     ]
     if model_name not in valid_models:
         return jsonify({"error": f"Invalid model: {model_name}. Valid models: {valid_models}"}), 400
@@ -94,59 +93,31 @@ def translate_text():
                 prompt = f'''
                 Translate the following text from {source_lang} to {target_lang} with a {style_desc}:
                 "{chunk}"
-                Output in JSON format:
-                {{
-                  "translated_text": "translated result here"
-                }}
-                Return only pure JSON, no markdown or extra text.
+                Output only the translated text, no JSON or markdown.
                 '''
                 response = model.generate_content(prompt)
-                clean_response = re.sub(r'```json|```', '', response.text).strip()  # Loại bỏ markdown
-                logger.info(f"Translate chunk response raw: {response.text}")
-                json_match = re.search(r'\{.*?"translated_text":\s*".*?"\}', clean_response, re.DOTALL)
-                if json_match:
-                    clean_json = json_match.group(0)
-                    translated_data = json.loads(clean_json)
-                    translated_chunks.append(translated_data["translated_text"])
-                else:
-                    logger.warning(f"JSON parse failed for chunk, using raw text: {clean_response}")
-                    translated_chunks.append(clean_response)
+                clean_response = re.sub(r'```json|```', '', response.text).strip()
+                logger.info(f"Translate chunk response raw: {clean_response}")
+                translated_chunks.append(clean_response)  # Trả text thô trực tiếp
             return jsonify({"translated_text": " ".join(translated_chunks)})
-        except ValueError as ve:
-            logger.error(f"Invalid JSON in translate chunk: {str(ve)}, response: {response.text}")
-            return jsonify({"error": f"Invalid JSON response: {str(ve)}"}), 500
         except Exception as e:
-            logger.error(f"Translate chunk failed: {str(e)}")
+            logger.error(f"Translate chunk failed: {str(e)}, response: {response.text}")
             return jsonify({"error": f"Translation failed: {str(e)}"}), 500
     else:
         prompt = f'''
         Translate the following text from {source_lang} to {target_lang} with a {style_desc}:
         "{text}"
-        Output in JSON format:
-        {{
-          "translated_text": "translated result here"
-        }}
-        Return only pure JSON, no markdown or extra text.
+        Output only the translated text, no JSON or markdown.
         '''
         try:
             model = genai.GenerativeModel(model_name, generation_config={"temperature": float(temperature)})
             response = model.generate_content(prompt)
-            clean_response = re.sub(r'```json|```', '', response.text).strip()  # Loại bỏ markdown
-            logger.info(f"Translate response raw: {response.text}")
-            json_match = re.search(r'\{.*?"translated_text":\s*".*?"\}', clean_response, re.DOTALL)
-            if json_match:
-                clean_json = json_match.group(0)
-                translated_data = json.loads(clean_json)
-                return jsonify(translated_data)
-            else:
-                logger.warning(f"JSON parse failed, using raw text: {clean_response}")
-                return jsonify({"translated_text": clean_response})
-        except ValueError as ve:
-            logger.error(f"Invalid JSON in translate: {str(ve)}, response: {response.text}")
-            return jsonify({"error": f"Invalid JSON response: {str(ve)}"}), 500
+            clean_response = re.sub(r'```json|```', '', response.text).strip()
+            logger.info(f"Translate response raw: {clean_response}")
+            return clean_response  # Trả text thô trực tiếp, không JSON
         except Exception as e:
-            logger.error(f"Translate failed: {str(e)}")
-            return jsonify({"error": f"Translation failed: {str(e)}"}), 500
+            logger.error(f"Translate failed: {str(e)}, response: {response.text}")
+            return f"Translation failed: {str(e)}"  # Trả text lỗi
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5500)
