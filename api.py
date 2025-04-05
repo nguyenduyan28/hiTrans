@@ -31,7 +31,7 @@ def detect_language():
     '''
 
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')  # Dùng Flash cho detect
+        model = genai.GenerativeModel('gemini-2.0-flash')  # Dùng Flash cho detect
         response = model.generate_content(prompt)
         clean_response = response.text.strip('```json').strip('```').strip()
         detected_data = json.loads(clean_response)
@@ -46,7 +46,7 @@ def translate_text():
     text = data.get('text', '')
     source_lang = data.get('source_lang', 'unknown')
     target_lang = data.get('target_lang', 'vi')
-    model_name = data.get('model', 'gemini-1.5-flash')  # Mặc định Flash
+    model_name = data.get('model', 'gemini-2.0-flash')  # Mặc định Flash
     temperature = data.get('temperature', 0.5)
     style = data.get('style', 'casual')
     translate_full = data.get('translate_full', False)
@@ -56,10 +56,8 @@ def translate_text():
 
     # Danh sách model hợp lệ
     valid_models = [
-        'gemini-1.5-flash',
         'gemini-1.5-pro',
         'gemini-2.0-flash',
-        'gemini-2.5-pro-preview-03-25'
     ]
     if model_name not in valid_models:
         return jsonify({"error": f"Invalid model: {model_name}. Valid models: {valid_models}"}), 400
