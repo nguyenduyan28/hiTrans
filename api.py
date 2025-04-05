@@ -38,7 +38,7 @@ def detect_language():
     try:
         model = genai.GenerativeModel('gemini-2.0-flash')
         response = model.generate_content(prompt)
-        clean_response = response.text.strip('```json').strip('```').strip()
+        clean_response = re.sub(r'```json|```', '', response.text).strip()  # Loại bỏ markdown triệt để
         logger.info(f"Detect response raw: {response.text}")
         json_match = re.search(r'\{.*?\}', clean_response, re.DOTALL)
         if json_match:
@@ -84,8 +84,7 @@ def translate_text():
         "casual": "casual conversational tone"
     }.get(style, "casual conversational tone")
 
-    # Tăng giới hạn lên 10000 hoặc bỏ luôn (comment dòng max_length để bỏ)
-    max_length = 10000  # Có thể comment để xử lý full text không chia chunk
+    max_length = 10000
     if len(text) > max_length:
         chunks = [text[i:i+max_length] for i in range(0, len(text), max_length)]
         translated_chunks = []
@@ -102,7 +101,7 @@ def translate_text():
                 Return only pure JSON, no markdown or extra text.
                 '''
                 response = model.generate_content(prompt)
-                clean_response = response.text.strip('```json').strip('```').strip()
+                clean_response = re.sub(r'```json|```', '', response.text).strip()  # Loại bỏ markdown
                 logger.info(f"Translate chunk response raw: {response.text}")
                 json_match = re.search(r'\{.*?"translated_text":\s*".*?"\}', clean_response, re.DOTALL)
                 if json_match:
@@ -110,7 +109,6 @@ def translate_text():
                     translated_data = json.loads(clean_json)
                     translated_chunks.append(translated_data["translated_text"])
                 else:
-                    # Nếu JSON lỗi, lấy text thô từ response
                     logger.warning(f"JSON parse failed for chunk, using raw text: {clean_response}")
                     translated_chunks.append(clean_response)
             return jsonify({"translated_text": " ".join(translated_chunks)})
@@ -133,7 +131,7 @@ def translate_text():
         try:
             model = genai.GenerativeModel(model_name, generation_config={"temperature": float(temperature)})
             response = model.generate_content(prompt)
-            clean_response = response.text.strip('```json').strip('```').strip()
+            clean_response = re.sub(r'```json|```', '', response.text).strip()  # Loại bỏ markdown
             logger.info(f"Translate response raw: {response.text}")
             json_match = re.search(r'\{.*?"translated_text":\s*".*?"\}', clean_response, re.DOTALL)
             if json_match:
@@ -141,7 +139,6 @@ def translate_text():
                 translated_data = json.loads(clean_json)
                 return jsonify(translated_data)
             else:
-                # Nếu JSON lỗi, trả text thô
                 logger.warning(f"JSON parse failed, using raw text: {clean_response}")
                 return jsonify({"translated_text": clean_response})
         except ValueError as ve:
