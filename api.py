@@ -85,7 +85,7 @@ def translate_text():
                 }}
                 Return only pure JSON, no markdown or extra text.
                 '''
-                response = model.generate_content(prompt)
+                response = model.generate_content(prompt) + ']'
                 clean_response = response.text.strip('```json').strip('```').strip()
                 translated_data = json.loads(clean_response)
                 translated_chunks.append(translated_data["translated_text"])
