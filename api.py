@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 import google.generativeai as genai
 import json
+import re  # Thêm regex để lọc JSON
+import logging  # Thêm logging
 from dotenv import load_dotenv
 import os
 from flask_caching import Cache
@@ -10,6 +12,10 @@ load_dotenv()
 GEMINI_API = os.getenv('GEMINI_API')
 
 genai.configure(api_key=GEMINI_API)
+
+# Cấu hình logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 cache = Cache(app, config={'CACHE_TYPE': 'simple', 'CACHE_DEFAULT_TIMEOUT': 300})
 
@@ -34,9 +40,20 @@ def detect_language():
         model = genai.GenerativeModel('gemini-2.0-flash')
         response = model.generate_content(prompt)
         clean_response = response.text.strip('```json').strip('```').strip()
-        detected_data = json.loads(clean_response)
-        return jsonify(detected_data)
+        logger.info(f"Detect response raw: {response.text}")
+        # Lọc chỉ lấy JSON đầu tiên
+        json_match = re.search(r'\{.*?\}', clean_response, re.DOTALL)
+        if json_match:
+            clean_json = json_match.group(0)
+            detected_data = json.loads(clean_json)
+            return jsonify(detected_data)
+        else:
+            raise ValueError("No valid JSON found in response")
+    except ValueError as ve:
+        logger.error(f"Invalid JSON in detect: {str(ve)}, response: {response.text}")
+        return jsonify({"detected_language": "unknown", "error": str(ve)}), 500
     except Exception as e:
+        logger.error(f"Detect failed: {str(e)}")
         return jsonify({"detected_language": "unknown", "error": str(e)}), 500
 
 @app.route('/translate', methods=['POST'])
@@ -55,10 +72,10 @@ def translate_text():
         return jsonify({"error": "No text provided"}), 400
 
     valid_models = [
-        'gemini-1.5-flash',  # Thêm Flash cho tốc độ
+        'gemini-1.5-flash',
         'gemini-1.5-pro',
         'gemini-2.0-flash',
-        'gemini-2.5-pro-preview-03-25'  # Sửa tên model preview
+        'gemini-2.5-pro-preview-03-25'
     ]
     if model_name not in valid_models:
         return jsonify({"error": f"Invalid model: {model_name}. Valid models: {valid_models}"}), 400
@@ -87,12 +104,21 @@ def translate_text():
                 '''
                 response = model.generate_content(prompt)
                 clean_response = response.text.strip('```json').strip('```').strip()
-                translated_data = json.loads(clean_response)
-                translated_chunks.append(translated_data["translated_text"])
+                logger.info(f"Translate chunk response raw: {response.text}")
+                # Lọc chỉ lấy JSON đầu tiên
+                json_match = re.search(r'\{.*?\}', clean_response, re.DOTALL)
+                if json_match:
+                    clean_json = json_match.group(0)
+                    translated_data = json.loads(clean_json)
+                    translated_chunks.append(translated_data["translated_text"])
+                else:
+                    raise ValueError("No valid JSON found in response")
             return jsonify({"translated_text": " ".join(translated_chunks)})
         except ValueError as ve:
+            logger.error(f"Invalid JSON in translate chunk: {str(ve)}, response: {response.text}")
             return jsonify({"error": f"Invalid JSON response: {str(ve)}"}), 500
         except Exception as e:
+            logger.error(f"Translate chunk failed: {str(e)}")
             return jsonify({"error": f"Translation failed: {str(e)}"}), 500
     else:
         prompt = f'''
@@ -108,11 +134,20 @@ def translate_text():
             model = genai.GenerativeModel(model_name, generation_config={"temperature": float(temperature)})
             response = model.generate_content(prompt)
             clean_response = response.text.strip('```json').strip('```').strip()
-            translated_data = json.loads(clean_response)
-            return jsonify(translated_data)
+            logger.info(f"Translate response raw: {response.text}")
+            # Lọc chỉ lấy JSON đầu tiên
+            json_match = re.search(r'\{.*?\}', clean_response, re.DOTALL)
+            if json_match:
+                clean_json = json_match.group(0)
+                translated_data = json.loads(clean_json)
+                return jsonify(translated_data)
+            else:
+                raise ValueError("No valid JSON found in response")
         except ValueError as ve:
+            logger.error(f"Invalid JSON in translate: {str(ve)}, response: {response.text}")
             return jsonify({"error": f"Invalid JSON response: {str(ve)}"}), 500
         except Exception as e:
+            logger.error(f"Translate failed: {str(e)}")
             return jsonify({"error": f"Translation failed: {str(e)}"}), 500
 
 if __name__ == '__main__':
