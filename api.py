@@ -102,7 +102,6 @@ def translate_text():
                 '''
                 response = model.generate_content(prompt)
                 clean_response = re.sub(r'```json|```', '', response.text).strip()  # Loại bỏ markdown
-                clean_response = re.sub(r'"translated_text: "|{|}```', '', clean_response).strip()  # Loại bỏ markdown
                 logger.info(f"Translate chunk response raw: {response.text}")
                 json_match = re.search(r'\{.*?"translated_text":\s*".*?"\}', clean_response, re.DOTALL)
                 if json_match:
