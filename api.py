@@ -31,7 +31,7 @@ def detect_language():
     '''
 
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         response = model.generate_content(prompt)
         clean_response = response.text.strip('```json').strip('```').strip()
         detected_data = json.loads(clean_response)
@@ -46,7 +46,7 @@ def translate_text():
     text = data.get('text', '')
     source_lang = data.get('source_lang', 'unknown')
     target_lang = data.get('target_lang', 'vi')
-    model_name = data.get('model', 'gemini-1.5-flash')
+    model_name = data.get('model', 'gemini-2.0-flash')
     temperature = data.get('temperature', 0.5)
     style = data.get('style', 'casual')
     translate_full = data.get('translate_full', False)
@@ -55,7 +55,6 @@ def translate_text():
         return jsonify({"error": "No text provided"}), 400
 
     valid_models = [
-        'gemini-1.5-flash',
         'gemini-1.5-pro',
         'gemini-2.0-flash',
         'gemini-2.5-pro-exp-03-25'
