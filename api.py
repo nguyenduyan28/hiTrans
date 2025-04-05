@@ -55,9 +55,10 @@ def translate_text():
         return jsonify({"error": "No text provided"}), 400
 
     valid_models = [
+        'gemini-1.5-flash',  # Thêm Flash cho tốc độ
         'gemini-1.5-pro',
         'gemini-2.0-flash',
-        'gemini-2.5-pro-exp-03-25'
+        'gemini-2.5-pro-preview-03-25'  # Sửa tên model preview
     ]
     if model_name not in valid_models:
         return jsonify({"error": f"Invalid model: {model_name}. Valid models: {valid_models}"}), 400
@@ -84,11 +85,13 @@ def translate_text():
                 }}
                 Return only pure JSON, no markdown or extra text.
                 '''
-                response = model.generate_content(prompt) + ']'
+                response = model.generate_content(prompt)
                 clean_response = response.text.strip('```json').strip('```').strip()
                 translated_data = json.loads(clean_response)
                 translated_chunks.append(translated_data["translated_text"])
             return jsonify({"translated_text": " ".join(translated_chunks)})
+        except ValueError as ve:
+            return jsonify({"error": f"Invalid JSON response: {str(ve)}"}), 500
         except Exception as e:
             return jsonify({"error": f"Translation failed: {str(e)}"}), 500
     else:
@@ -107,6 +110,8 @@ def translate_text():
             clean_response = response.text.strip('```json').strip('```').strip()
             translated_data = json.loads(clean_response)
             return jsonify(translated_data)
+        except ValueError as ve:
+            return jsonify({"error": f"Invalid JSON response: {str(ve)}"}), 500
         except Exception as e:
             return jsonify({"error": f"Translation failed: {str(e)}"}), 500
 
