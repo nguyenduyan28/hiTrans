@@ -55,10 +55,16 @@ def translate_text():
         return jsonify({"error": "No text provided"}), 400
 
     # Danh sách model hợp lệ
+    for models in genai.list_models():
+        valid_models.append(models.name)
     valid_models = [
         'gemini-1.5-pro',
         'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
+        'gemini-2.0-flash-thinking-exp',
+        'gemini-2.5-pro-exp-03-25'
     ]
+    print(valid_models)
     if model_name not in valid_models:
         return jsonify({"error": f"Invalid model: {model_name}. Valid models: {valid_models}"}), 400
 
